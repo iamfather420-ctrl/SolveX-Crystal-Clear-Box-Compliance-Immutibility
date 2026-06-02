@@ -1,5 +1,4 @@
-name: Build Android Package
-
+name: Build Android APK
 on:
   push:
     branches: [ main ]
@@ -9,37 +8,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set Up Python
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.10'
 
-    - name: Install Dependencies
+    - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache git libffi-dev libssl-dev autoconf automake libtool openjdk-17-jdk unzip zip
-        pip install --upgrade pip
-        pip install Cython==0.29.33 buildozer
+        sudo apt-get install -y ccache libncurses5:i386 libstdc++6:i386 libgtk2.0-0:i386 libpangox-1.0-0:i386 libpangoxft-1.0-0:i386 libidn11:i386 zip unzip zlib1g-dev
 
-    - name: Build with Buildozer
-      run: |
-        # Strip out host NDK pathing that conflicts with version 25b
-        unset ANDROID_NDK
-        unset ANDROID_NDK_HOME
-        unset ANDROID_NDK_LATEST_HOME
-        
-        # Navigate to vault and execute build
-        cd vault/
-        yes | buildozer android debug
-      env:
-        BUILDOZER_WARN_ON_ROOT: 0
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+    - name: Build APK with Buildozer
+      uses: ArtemSuts/buildozer-action@v1
       with:
-        name: android-debug-apk
-        path: vault/bin/*.apk
+        command: buildozer android debug
+        repository_root: .
 
+    - name: Upload Compiled APK Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: SolveX-Crystal-Clear-Box
+        path: bin/*.apk
