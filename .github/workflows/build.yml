@@ -37,6 +37,11 @@ jobs:
           rm -rf .buildozer/android/platform/build-* || true
           rm -rf bin/ || true
 
+      - name: Clean buildozer cache
+        run: |
+          rm -rf ~/.buildozer/android/platform/build-*
+          rm -rf .buildozer/android/platform/build-*
+
       - name: Execute Android Compilation
         run: |
           yes | buildozer -v android debug
