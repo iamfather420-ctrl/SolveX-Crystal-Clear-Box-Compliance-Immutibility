@@ -1,37 +1,81 @@
-name: Build Android APK
+name: Remote Compilation Pipeline
+
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-android-apk:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Provision Core Ubuntu Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libltdl-dev libffi-dev libssl-dev python3-dev zip unzip zlib1g-dev openjdk-17-jdk
 
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ccache libncurses5 zip unzip zlib1g-dev libstdc++6 openjdk-17-jdk
+      - name: Provision Python Build Architecture
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install Buildozer and Dependencies
-      run: |
-        pip install --upgrade pip
-        pip install buildozer cython
+      - name: Install Buildozer Framework
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython virtualenv
 
-    - name: Build APK with Buildozer
-      run: |
-        buildozer android debug
+      - name: Clean Previous Build Artifacts
+        run: |
+          buildozer android clean
+          rm -rf .buildozer/android/platform/build-* || true
+          rm -rf bin/ || true
 
-    - name: Upload Compiled APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SolveX-Crystal-Clear-Box
-        path: bin/*.apk
+      - name: Execute Android Compilation
+        run: |
+          yes | buildozer -v android debug
+
+      - name: Generate Release Tag
+        id: generate_tag
+        run: |
+          TAG="release-$(date +%Y%m%d-%H%M%S)"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "date=$(date)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.generate_tag.outputs.tag }}
+          name: "Base Waste Harvester - ${{ steps.generate_tag.outputs.date }}"
+          body: |
+            ## APK Build Release
+            
+            **Build Date:** ${{ steps.generate_tag.outputs.date }}
+            **Commit:** ${{ github.sha }}
+            
+            ### Download Instructions:
+            1. Download the APK file below on your Android device
+            2. Open file manager and navigate to Downloads
+            3. Tap the APK file to install
+            4. Allow installation from unknown sources if prompted
+            
+            ### Device Requirements:
+            - Android 5.0 (API 21) or higher
+            - Minimum 100MB free storage
+          files: |
+            bin/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Secure Final APK Artifact (Backup)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGATE_Base_Waste_Harvester_Release
+          path: bin/*.apk
+          retention-days: 30
