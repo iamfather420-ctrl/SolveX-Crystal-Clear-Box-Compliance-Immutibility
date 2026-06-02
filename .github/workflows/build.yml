@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android-apk:
     runs-on: ubuntu-latest
@@ -49,22 +52,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.generate_tag.outputs.tag }}
-          name: "Base Waste Harvester - ${{ steps.generate_tag.outputs.date }}"
+          name: "SolveX Crystal Clear Box Compliance Immutability - ${{ steps.generate_tag.outputs.date }}"
           body: |
-            ## APK Build Release
+            ## SolveX Crystal Clear Box APK Release
             
             **Build Date:** ${{ steps.generate_tag.outputs.date }}
             **Commit:** ${{ github.sha }}
             
             ### Download Instructions:
-            1. Download the APK file below on your Android device
-            2. Open file manager and navigate to Downloads
-            3. Tap the APK file to install
-            4. Allow installation from unknown sources if prompted
-            
-            ### Device Requirements:
-            - Android 5.0 (API 21) or higher
-            - Minimum 100MB free storage
+            1. Download the APK file below on your Android device.
+            2. Open your file manager and navigate to Downloads.
+            3. Tap the APK file to install.
           files: |
             bin/*.apk
           draft: false
@@ -76,6 +74,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AGATE_Base_Waste_Harvester_Release
+          name: SolveX_Crystal_Clear_Box_Compliance_Immutability_Release
           path: bin/*.apk
           retention-days: 30
