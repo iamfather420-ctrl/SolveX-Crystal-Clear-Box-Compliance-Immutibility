@@ -25,6 +25,31 @@ Branch: `main`
 Observed source commit: `208674f7d4f1b4d1452955099e6eff6ef894ed4f`
 Role: Daisy UI/OS, brain, audit, authentication, database, marketplace, MMTAI and related application layers.
 
+
+## Source D — Solvex Paradox Box / Daisy Proof Core
+
+Repository: `iamfather420-ctrl/SOLVEX-PARADOX-BOX`
+Observed source commit: `660b11ade67b4358a162de756a4f0f76ec675050`
+Integration branch: `integration/daisy-paradox-brain`
+Integration commit: `09d1af9b0db5cbba7acd0e1b9a0f0630ccc5c146`
+Role: canonical 32-record paradox registry, DFRL, Z3 formal proof engine, NOPOT termination verifier, proof bundles, ProofEngine, DaisyBrain, MMTAI, reversible persistence and enterprise verification.
+
+Observed executable paradox registry:
+- DH-P-001 through DH-P-032
+- 20 registry entries marked VERIFIED
+- 5 FAMILY_VARIANT
+- 4 CLAIM_ONLY
+- 3 PARTIAL
+
+Observed formal proof layer:
+- 8 DFRL contracts
+- Z3 theorem catalog
+- NOPOT verification
+- proof-bundle integrity gates
+- replay/oracle evidence fields
+
+Important: registry labels and audit reports remain non-authoritative until backed by executable proof evidence.
+
 ## Integration rules
 
 1. Preserve source provenance and commit references.
