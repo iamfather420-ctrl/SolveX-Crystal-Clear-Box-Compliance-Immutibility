@@ -13,7 +13,8 @@ cleanup() {
     if command -v termux-wake-unlock >/dev/null 2>&1; then termux-wake-unlock || true; fi
     exit "$code"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT TERM
 
 mkdir -p "$(dirname "$LOG_FILE")" || exit 1
 if command -v termux-wake-lock >/dev/null 2>&1; then termux-wake-lock || true; fi
