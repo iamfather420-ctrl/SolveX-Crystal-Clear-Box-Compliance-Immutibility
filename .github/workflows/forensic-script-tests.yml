@@ -1,0 +1,16 @@
+name: Forensic script safety tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shell syntax
+        run: bash -n vault/forensic_soak_test.sh vault/generate_live_audit.sh vault/generate_report.sh
+      - name: Run fail-closed forensic tests
+        run: bash tests/test_forensic_scripts.sh

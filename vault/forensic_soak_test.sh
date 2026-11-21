@@ -1,32 +1,49 @@
 #!/data/data/com.termux/files/usr/bin/bash
+set -u
+
 LOG_FILE="$HOME/.agate_node/vault/consensus_memory.json"
-ITERATIONS=50000
-PORT=8888
+ITERATIONS="${ITERATIONS:-50000}"
+PORT="${PORT:-8888}"
+TARGET="http://127.0.0.1:$PORT"
+
 cleanup() {
-    echo -e "\nAudit interrupted. Cleaning up..."
-    exec 3>&-
-    termux-wake-unlock
-    exit 0
+    local code=$?
+    echo
+    echo "Audit interrupted or finished. Releasing Termux wake lock..."
+    if command -v termux-wake-unlock >/dev/null 2>&1; then termux-wake-unlock || true; fi
+    exit "$code"
 }
-trap cleanup SIGINT
-termux-wake-lock
-echo "Initiating 50,000-cycle forensic soak test..."
-mkdir -p "$HOME/.agate_node/vault"
-exec 3>>"$LOG_FILE"
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
+mkdir -p "$(dirname "$LOG_FILE")" || exit 1
+if command -v termux-wake-lock >/dev/null 2>&1; then termux-wake-lock || true; fi
+
+echo "Starting $ITERATIONS connectivity observations against $TARGET."
+echo "Log format: JSON Lines. HTTP non-200 and connection failures are not classified as intrusions."
 for ((i=1; i<=ITERATIONS; i++)); do
-    TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
-    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$PORT)
-    if [[ "$RESPONSE" == "200" ]]; then
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"id\": $i, \"status\": \"SUCCESS\", \"event\": \"Node Heartbeat Validated\"}" >&3
+    TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    HTTP_STATUS="$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --connect-timeout 1 --max-time 2 "$TARGET" 2>/dev/null)"
+    CURL_EXIT=$?
+
+    if [[ "$CURL_EXIT" -ne 0 || "$HTTP_STATUS" == "000" || -z "$HTTP_STATUS" ]]; then
+        STATUS="UNAVAILABLE"
+        EVENT="Connection observation unavailable"
+    elif [[ "$HTTP_STATUS" == "200" ]]; then
+        STATUS="SUCCESS"
+        EVENT="HTTP endpoint returned 200"
     else
-        ERROR_DETAIL=$(curl -s -I http://127.0.0.1:$PORT 2>&1 | head -n 1)
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"id\": $i, \"status\": \"FAIL\", \"event\": \"Intrusion/Connection block detected\", \"detail\": \"$ERROR_DETAIL\"}" >&3
+        STATUS="HTTP_RESPONSE"
+        EVENT="HTTP endpoint returned a non-200 response"
+    fi
+
+    printf '{"timestamp":"%s","id":%d,"status":"%s","event":"%s","http_status":"%s"}\n' \
+        "$TIMESTAMP" "$i" "$STATUS" "$EVENT" "${HTTP_STATUS:-000}" >> "$LOG_FILE"
+
+    if (( i % 1000 == 0 )); then
+        echo "Observations: $i / $ITERATIONS"
     fi
     sleep 0.1
-    if (( i % 1000 == 0 )); then
-        echo "Audit Progress: $i / $ITERATIONS cycles complete."
-    fi
 done
-exec 3>&-
-termux-wake-unlock
-echo "Audit Complete."
+
+echo "Observation run complete. This measures endpoint responses only; it does not prove intrusion detection or firewall effectiveness."
